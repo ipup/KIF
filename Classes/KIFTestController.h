@@ -114,6 +114,8 @@ typedef void (^KIFTestControllerCompletionBlock)();
  */
 - (void)addAllScenariosWithSelectorPrefix:(NSString *)selectorPrefix fromClass:(Class)klass;
 
+- (void)addAllScenariosWithSelectorContaining:(NSString *)shouldInclude fromClass:(Class)klass;
+
 /*!
  @method addScenario:
  @abstract Add a scenario to the test suite.

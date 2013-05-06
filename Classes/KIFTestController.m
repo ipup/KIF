@@ -214,6 +214,43 @@ static void releaseInstance()
     free(methods);
 }
 
+- (void)addAllScenariosWithSelectorContaining:(NSString *)shouldInclude fromClass:(Class)klass;
+{
+    unsigned int count;
+    Method *methods = class_copyMethodList(object_getClass(klass), &count);
+    
+    if (!count) {
+        return;
+    }
+    
+    NSMutableArray *selectorStrings = [NSMutableArray array];
+    
+    for (NSInteger index = 0; index < count; index++) {
+        SEL selector = method_getName(methods[index]);
+        NSString *selectorString = NSStringFromSelector(selector);
+        if ([selectorString rangeOfString:shouldInclude options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            if ([selectorString hasSuffix:@":"]) {
+                if (![selectorString isEqualToString:@"scenarioWithDescription:"]) {
+                    // Logging about -scenarioWithDescription: would just be noise.
+                    // But log that we're skipping the rest to not confuse people who would expect their scenario to get run automatically.
+                    [self _logDidSkipAddingScenarioGenerator:selectorString];
+                }
+                continue;
+            }
+            
+            [selectorStrings addObject:selectorString];
+        }
+    }
+    
+    [selectorStrings sortUsingSelector:@selector(compare:)];
+    [selectorStrings enumerateObjectsUsingBlock:^(id selectorString, NSUInteger idx, BOOL *stop) {
+        KIFTestScenario *scenario = (KIFTestScenario *)objc_msgSend(klass, NSSelectorFromString(selectorString));
+        [self addScenario:scenario];
+    }];
+    
+    free(methods);
+}
+
 - (void)addScenario:(KIFTestScenario *)scenario;
 {
     NSAssert(![self.scenarios containsObject:scenario], @"The scenario %@ is already added", scenario);
